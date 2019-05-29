@@ -1,0 +1,26 @@
+#!/usr/bin/python3
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-n", "--ionumber", help="Select the IO number", default="1", choices=["1", "2", "3", "4"])
+parser.add_argument("-d", "--direction", help="Set the IO direction: input or output", default="input", choices=["input", "output"])
+parser.add_argument("-v", "--value", help="Set the output value", choices=["0", "1"])
+args = parser.parse_args()
+
+dinfile = "/digital_ios/din{}/value".format(args.ionumber)
+doutfile = "/digital_ios/dout{}/value".format(args.ionumber)
+if args.direction == "input":
+    # Make sure to write '0' to dout so it can work as input
+    with open(doutfile, "w") as f:
+        f.write("0")
+
+    with open(dinfile, "r") as f:
+        val = f.read()
+
+    print(val)
+    exit(0)
+
+else:
+    iofile = "/digital_ios/dout" + args.ionumber
+    with open(doutfile, "w") as f:
+        f.write(args.value)

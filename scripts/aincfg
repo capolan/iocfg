@@ -1,0 +1,157 @@
+#!/usr/bin/python3
+import argparse
+import sys
+
+sensor_type_dict={ \
+    "TC_J":0, "TC_K":1, "TC_T":2, "TC_N":3, "TC_R":4, "TC_S":5, \
+    "TC_B":6, "TC_E":7, "PT100":8 , "PT1000":9, "NTC":10, "0TO60MV":11, \
+    "0TO5V":12, "0TO10V":13, "0TO20MA":14, "4TO20MA":15, "POT":16, "CALIB_TEST":17 \
+    }
+opmode_dict = {"on-demand":0, "free-running":1}
+unit_dict = {"celsius":0, "fahrenheit":1}
+anti_noise_dict = {"off":0, "light":1, "medium":2, "strong":3}
+mains_freq_dict = {"10Hz":0, "50Hz":1, "60Hz":2}
+
+debug=False
+def dbg(x):
+    if debug:
+        print(x)
+
+def get_dict_key_from_value(dict_obj, val):
+    """
+    Get the dictionary key value from its value. Return None if it does not exist.
+    """
+    for x,y in dict_obj.items():
+        if y == val:
+            return x
+
+def write_param(ionumber, filename, value):
+    """
+    Write a parameter to the analog input driver SYSFS mapped file.
+    """
+
+    path = "/analog_ios/ain{}/".format(ionumber)
+
+    with open(path+filename, "w") as f:
+        dbg("Writing {} to {}".format(str(value), path+filename))
+        f.write(str(value)+"\n")
+
+def show_param(ionumber, filename):
+    """
+    Print a parameter value by reading from SYSFS mapped file.
+    """
+    path = "/analog_ios/ain{}/".format(ionumber)
+    val = "unknown"
+    try:
+        with open(path+filename, "r") as f:
+            val = f.read().strip()
+    finally:
+            if filename == "type":
+                val = get_dict_key_from_value(sensor_type_dict, int(val))
+            elif filename == "unit":
+                val = get_dict_key_from_value(unit_dict, int(val))
+            elif filename == "anti_noise":
+                val = get_dict_key_from_value(anti_noise_dict, int(val))
+            elif filename == "opmode":
+                val = get_dict_key_from_value(opmode_dict, int(val))
+            elif filename == "mains_freq":
+                val = get_dict_key_from_value(mains_freq_dict, int(val))
+
+            print(" {} => {}".format(filename, val))
+
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-n", "--ionumber", help="Select the IO number", default="1", choices=["1", "2", "3", "4"])
+parser.add_argument("-r", "--show-readings", help="Show input readings for the selected input", action='store_true')
+parser.add_argument("-s", "--show-params", help="Show configurable parameters for the selected input", action='store_true')
+
+parser.add_argument("--inll", help="Set the range beginning for linear sensors", type=int)
+parser.add_argument("--inhl", help="Set the range end for linear sensors", type=int)
+parser.add_argument("--sensor-type", help="Set the sensor type connected on this input", choices=sensor_type_dict.keys())
+parser.add_argument("--temp-unit", help="Set temperature unit", choices=unit_dict.keys())
+parser.add_argument("--offset", help="Set offset value", type=int)
+parser.add_argument("--opmode", help="Set the operation mode", choices=opmode_dict.keys())
+parser.add_argument("--anti-noise", help="Set anti-noise filter type", choices=anti_noise_dict.keys())
+parser.add_argument("--window-size", help="Set the acquisition window", type=int)
+parser.add_argument("--filter", help="Set size of first order filter, in seconds", type=int)
+parser.add_argument("--cj1factor", help="Set CJ1 factor", type=int)
+parser.add_argument("--cj2factor", help="Set CJ2 factor", type=int)
+parser.add_argument("--cjoffset", help="Set CJ offset", type=int)
+parser.add_argument("--mains-freq", help="Set the electric grid frequency", choices=mains_freq_dict.keys())
+parser.add_argument("--period-samples", help="Set the number of samples within a grid period", type=int)
+args = parser.parse_args()
+
+if args.show_readings:
+    show_param(args.ionumber, "input")
+    show_param(args.ionumber, "cj1")
+    show_param(args.ionumber, "cj2")
+    show_param(args.ionumber, "az")
+    show_param(args.ionumber, "raw_ch0")
+    show_param(args.ionumber, "raw_ch1")
+    show_param(args.ionumber, "raw_ch2")
+    show_param(args.ionumber, "raw_az")
+    show_param(args.ionumber, "raw_cj1")
+    show_param(args.ionumber, "raw_cj2")
+    show_param(args.ionumber, "raw_ch2check")
+    exit(0)
+
+if args.show_params:
+    show_param(args.ionumber, "inll")
+    show_param(args.ionumber, "inhl")
+    show_param(args.ionumber, "type")
+    show_param(args.ionumber, "unit")
+    show_param(args.ionumber, "offset")
+    show_param(args.ionumber, "opmode")
+    show_param(args.ionumber, "window_size")
+    show_param(args.ionumber, "anti_noise")
+    show_param(args.ionumber, "filter")
+    show_param(args.ionumber, "cj1_factor")
+    show_param(args.ionumber, "cj2_factor")
+    show_param(args.ionumber, "cj_offset")
+    show_param(args.ionumber, "mains_freq")
+    show_param(args.ionumber, "period_samples")
+    exit(0)
+
+if args.cj1factor:
+    write_param(args.ionumber, "cj1_factor", args.cj1factor)
+
+if args.cj2factor:
+    write_param(args.ionumber, "cj2_factor", args.cj2factor)
+
+if args.cjoffset:
+    write_param(args.ionumber, "cj_offset", args.cjoffset)
+
+if args.inll:
+    write_param(args.ionumber, "inll", args.inll)
+
+if args.inhl:
+    write_param(args.ionumber, "inhl", args.inhl)
+
+if args.offset:
+    write_param(args.ionumber, "offset", args.offset)
+
+if args.window_size:
+    write_param(args.ionumber, "window_size", args.window_size)
+
+if args.filter:
+    write_param(args.ionumber, "filter", args.filter)
+
+if args.mains_freq:
+    write_param(args.ionumber, "mains_freq", mains_freq_dict[args.mains_freq])
+
+if args.period_samples:
+    write_param(args.ionumber, "period_samples", args.period_samples)
+
+if args.sensor_type:
+    write_param(args.ionumber, "type", sensor_type_dict[args.sensor_type])
+
+if args.temp_unit:
+    write_param(args.ionumber, "unit", unit_dict[args.temp_unit])
+
+if args.opmode:
+    write_param(args.ionumber, "opmode", opmode_dict[args.opmode])
+
+# Save configuration
+write_param(args.ionumber, "store_config", 1)
+write_param(args.ionumber, "reconfig", 1)

@@ -1,0 +1,36 @@
+#!/usr/bin/python3
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-n", "--ionumber", help="Select the IO number", default="1", choices=["1", "2"], required=True)
+parser.add_argument("-t", "--type", help="Set the analog output type", default="0-5V", choices=["0-5V", "0-10V", "0-20mA", "4-20mA"], required=True)
+parser.add_argument("-v", "--value", help="Set the output value in engineering units", type=int, required=True)
+args = parser.parse_args()
+
+# Check if output value is within boundaries
+if args.type == "0-5V":
+    min = 0
+    max = 5000
+elif args.type == "0-10V":
+    min = 0
+    max = 10000
+elif args.type == "0-20mA":
+    min = 0
+    max = 20000
+elif args.type == "4-20mA":
+    min = 4000
+    max = 20000
+
+if args.value < min or args.value > max:
+    print("Output value {} is invalid for type {}.".format(args.value, args.type))
+    print("Value must be within these boundaries : min {}, max {}".format(min,max))
+    exit(-1)
+
+out_type_filename = "/analog_outputs/aout{}/out_type".format(args.ionumber)
+out_eng_units_filename = "/analog_outputs/aout{}/out_eng_units".format(args.ionumber)
+
+with open(out_type_filename, "w") as f:
+    f.write(str(args.type)+'\n') #Somehow the type needs a '\n' in the end of the string
+
+with open(out_eng_units_filename, "w") as f:
+    f.write(str(args.value))
